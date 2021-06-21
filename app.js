@@ -1,5 +1,5 @@
 //jshint esversion:6
-
+require('dotenv').config();
 const express = require("express");
 const bodyParser = require("body-parser");
 const ejs = require("ejs");
@@ -8,8 +8,8 @@ const passport = require("passport");
 const User  = require("./models/user");
 const LocalStrategy = require("passport-local");
 const passportLocalMongoose = require("passport-local-mongoose");
-
-
+const GoogleStrategy = require('passport-google-oauth20').Strategy;
+const findOrCreate = require("mongoose-findorcreate");
 
 mongoose.connect("mongodb+srv://sonal:sonal522@cluster0.b72pi.mongodb.net/blogDB",{userNewUrlParser:true});
 
@@ -22,7 +22,8 @@ app.use(express.static("public"));
 
 const blogSchema =new mongoose.Schema({
 title:String,
-body:String
+body:String,
+author:String
 });
 
 var Blog = mongoose.model("Blog",blogSchema);
@@ -33,6 +34,7 @@ app.use(require("express-session")({
   saveUninitialized:false
   }));
 
+
  //setting passport up to use in our application 
 app.use(passport.initialize());
  app.use(passport.session());
@@ -41,9 +43,35 @@ app.use(passport.initialize());
  
 passport.use(new LocalStrategy(User.authenticate()));
 
-//used for reading the sessions , talinh data from sessions , decode it and then again encode it and put back to sessions
- passport.serializeUser(User.serializeUser());
- passport.deserializeUser(User.deserializeUser());
+//used for reading the sessions , taking data from sessions , decode it and then again encode it and put back to sessions
+passport.use(User.createStrategy());
+passport.serializeUser(function(user, done) {
+    done(null, user.id);
+  });
+  
+  passport.deserializeUser(function(id, done) {
+    User.findById(id, function(err, user) {
+      done(err, user);
+    });
+  });
+
+
+
+ passport.use(new GoogleStrategy({
+  clientID: process.env.CLIENT_ID,
+  clientSecret: process.env.CLIENT_SECRET,
+  callbackURL: "http://localhost:3000/auth/google/blogs",
+  userProfileURL: "https://www.googleapis.com/oauth2/v3/userinfo"
+},
+//google providing acessToken to acess info of user
+function(accessToken, refreshToken, profile, cb) {
+  //either  find the user with thses info or create it
+  User.findOrCreate({ googleId: profile.id }, function (err, user) {
+    return cb(err, user);
+  });
+}
+));
+
 
 
 app.get("/", function(req, res){
@@ -103,13 +131,13 @@ app.get("/compose",isLoggedIn, function(req, res){
 app.post("/compose",function(req, res){
  const newBlog = new Blog({
      title:req.body.postTitle,
-     body:req.body.postBody
+     body:req.body.postBody,
+     author:req.body.Author
  });
      newBlog.save();
      res.redirect("/");
-
-
 });
+
 function isLoggedIn(req,res,next){
   if(req.isAuthenticated()){
   return next();
@@ -117,6 +145,18 @@ function isLoggedIn(req,res,next){
   res.redirect("/login");
 }
 
+//redirected to this roite when hits sign in/up with google
+//will authenticate the user
+app.get("/auth/google",
+  passport.authenticate('google', { scope: ["profile"] })
+);
+//after authentication , this route will be triggered which will redirect to the compose page
+app.get("/auth/google/blogs",
+  passport.authenticate('google', { failureRedirect: "/login" }),
+  function(req, res) {
+    // Successful authentication, redirect to secrets.
+    res.redirect("/compose");
+  });
 
 app.get("/posts/:postId", function(req, res){
   const requestedPostId = req.params.postId;

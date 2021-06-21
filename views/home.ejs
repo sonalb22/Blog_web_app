@@ -1,17 +1,30 @@
 
 <%- include("partials/header"); -%>
-    <h4>Read the blogs written by others or create a blog of your own. Knowledge always increases by sharing.So,keep spreading wisdom and knowledge.</h4>
+    <h5>Read the blogs written by others or create a blog of your own. Knowledge always increases by sharing.So,keep spreading wisdom and knowledge.</h5>
 <form action="/compose">
    <button type="submit" class="button">Write a Post</button>
   </form>
   <%  posts.forEach(function(post){ %>
-
-    <h1><%=post.title%></h1>
-    <p>
-    <%=post.body.substring(0, 100) + " ..."%>
-    <a href="/posts/<%=post._id%>">Read More</a>
-    </p>
-
+    
+    <div class="card">
+      <div class="card-header" style="max-width: 100%;">
+          <h2><%=post.title%></h2>
+      </div>
+      <div class="card-body">
+        <p class="card-text">
+          <%=post.body.substring(0, 100) + " ......."%>
+          <a href="/posts/<%=post._id%>">Read More</a> 
+          
+        </p>
+        <blockquote class="blockquote mb-0">
+        <footer class="blockquote-footer">
+          <img src="images/man.png" class="rounded-circle z-depth-0"
+            alt="avatar image" height="40">
+          <cite title="Source Title"><%=post.author%></cite>
+          
+        </footer>
+      </div>
+    </div>
 
     <% }) %>
 
