@@ -28,12 +28,6 @@ author:String
 
 var Blog = mongoose.model("Blog",blogSchema);
 
-app.use(require("express-session")({
-  secret:"rusty is the best",//could be any english text ....used to encode and decode sessions
-  resave:false,
-  saveUninitialized:false
-  }));
-
 
  //setting passport up to use in our application 
 app.use(passport.initialize());
@@ -145,7 +139,7 @@ function isLoggedIn(req,res,next){
   res.redirect("/login");
 }
 
-//redirected to this roite when hits sign in/up with google
+//redirected to this route when hits sign in/up with google
 //will authenticate the user
 app.get("/auth/google",
   passport.authenticate('google', { scope: ["profile"] })
@@ -154,7 +148,7 @@ app.get("/auth/google",
 app.get("/auth/google/blogs",
   passport.authenticate('google', { failureRedirect: "/login" }),
   function(req, res) {
-    // Successful authentication, redirect to secrets.
+    // Successful authentication, redirect to compose.
     res.redirect("/compose");
   });
 
